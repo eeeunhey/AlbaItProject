@@ -2,6 +2,9 @@ package ui;
 
 import java.util.Scanner;
 
+import service.BoardService;
+import service.BoardServiceFactory;
+
 public abstract class BaseUI implements IBoardUI {
 	/**
 	 * public class ExitUI extends BaseUI implements IBoardUI 모든 UI마다 똑같이 적어줘야 되는데
@@ -15,10 +18,12 @@ public abstract class BaseUI implements IBoardUI {
 	// 이 클래스는 입력받는기능을 모아놓은 클래스입니다
 
 	private Scanner sc;
+	protected BoardService boardService;
 
 	public BaseUI() {
 		sc = new Scanner(System.in);
 		// BaseUI가 생성될 때 만들어지는 입력받기 기능
+		boardService = new BoardServiceFactory().getInstance();
 	}
 
 	protected String scanStr(String msg) {

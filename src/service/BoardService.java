@@ -39,7 +39,9 @@ public class BoardService {
     }
 
     public PostVO searchBoardByNo(int boardNo) {
-        return postDao.selectByNo(boardNo);  // ✅ 변수명 통일
+    	PostVO board = postDao.selectByNo(boardNo);  
+    	return board;// ✅ 변수명 통일
+        
     }
 
     public boolean removeBoardByNo(int boardNo) {
