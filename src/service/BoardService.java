@@ -32,12 +32,6 @@ public class BoardService {
 		postDao.insertJobPostList(boardList);
 	}
 
-	
-
-    public List<PostVO> searchBoardAll() {
-        return postDao.selectAllBoard();  // ✅ 객체로 호출
-    }
-
     public PostVO searchBoardByNo(int boardNo) {
     	PostVO board = postDao.selectByNo(boardNo);  
     	return board;// ✅ 변수명 통일

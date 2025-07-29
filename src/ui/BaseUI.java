@@ -6,6 +6,7 @@ import service.BoardService;
 import service.BoardServiceFactory;
 
 public abstract class BaseUI implements IBoardUI {
+
 	/**
 	 * public class ExitUI extends BaseUI implements IBoardUI 모든 UI마다 똑같이 적어줘야 되는데
 	 * 하.. 귀찮다 그래 그럼 이미 어차피 BaseUI를 상속받을거잖아 그니깐 여기다가 인터페이스 넣어주면 되잖아.. 그래 넣었어 각각의
@@ -19,6 +20,8 @@ public abstract class BaseUI implements IBoardUI {
 
 	private Scanner sc;
 	protected BoardService boardService;
+    public static String loginUserId = null;      // 현재 로그인한 ID
+    public static String loginUserType = null;    // "개인", "기업", "관리자"
 
 	public BaseUI() {
 		sc = new Scanner(System.in);
@@ -78,4 +81,6 @@ public abstract class BaseUI implements IBoardUI {
 	private boolean isKorean(char c) {
 		return (c >= 0xAC00 && c <= 0xD7A3);
 	}
+	
+	
 }
