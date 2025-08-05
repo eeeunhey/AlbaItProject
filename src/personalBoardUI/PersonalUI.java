@@ -53,7 +53,7 @@ public class PersonalUI extends BaseUI {
 
 					break;
 				case "3":
-					ui = new PostAddUI();
+					ui = new PersonalApplyJob();
 					break;
 				case "4":
 					ui = new AddUI();

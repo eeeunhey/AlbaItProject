@@ -132,21 +132,33 @@ public class PostDAO {
 		}
 	}
 
-	public boolean applyToJob(int postId, String userId) {
-		String sql = "INSERT INTO apply (apply_id, post_id, user_id, status) "
-				+ "VALUES (apply_seq.NEXTVAL, ?, ?, '대기')";
-		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	public boolean applyToJob(int postId, String loginUserId) {
+		String findUserNoSql = "SELECT user_no FROM user_table WHERE user_id = ?";
+		String insertSql = "INSERT INTO apply (apply_id, post_id, user_no, status) "
+				+ "VALUES (apply_seq.NEXTVAL, ?, ?, '접수')";
 
-			pstmt.setInt(1, postId);
-			pstmt.setString(2, userId);
+		try (Connection conn = DBUtil.getConnection();
+				PreparedStatement pstmt1 = conn.prepareStatement(findUserNoSql)) {
 
-			return pstmt.executeUpdate() > 0;
+			pstmt1.setString(1, loginUserId);
+			ResultSet rs = pstmt1.executeQuery();
 
-		} catch (SQLException e) {
+			if (rs.next()) {
+				int userNo = rs.getInt("user_no");
+
+				try (PreparedStatement pstmt2 = conn.prepareStatement(insertSql)) {
+					pstmt2.setInt(1, postId);
+					pstmt2.setInt(2, userNo);
+
+					return pstmt2.executeUpdate() > 0;
+				}
+			}
+
+		} catch (Exception e) {
 			e.printStackTrace();
-			return false;
 		}
-	}
 
+		return false;
+	}
 
 }
