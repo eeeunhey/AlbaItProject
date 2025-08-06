@@ -1,4 +1,6 @@
-package ui;
+package companyBoardUI;
+
+import ui.BaseUI;
 
 public class DeleteUI extends BaseUI {
 	// 게시글을 삭제하는 UI

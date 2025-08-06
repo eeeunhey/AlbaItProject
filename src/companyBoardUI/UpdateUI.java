@@ -1,4 +1,6 @@
-package ui;
+package companyBoardUI;
+
+import ui.BaseUI;
 
 public class UpdateUI extends BaseUI {
 	// 입력받을 꺼니깐 BaseUI 상속받자

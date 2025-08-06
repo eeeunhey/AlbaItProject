@@ -1,14 +1,15 @@
 package personalBoardUI;
 
 
+import companyBoardUI.DeleteUI;
+import companyBoardUI.UpdateUI;
 import exception.ChoiceOutOfBoundException;
-import ui.AddUI;
-import ui.DeleteUI;
+import ui.BaseBoardUI;
+import ui.ProfileInputUI;
 import ui.IBoardUI;
 import ui.SeachAllUI;
 import ui.SearchOneUI;
-import ui.UpdateUI;
-import ui.BaseBoardUI;
+import ui.ViewInfoUI;
 
 
 public class PersonalUI extends BaseBoardUI {
@@ -24,7 +25,8 @@ public class PersonalUI extends BaseBoardUI {
             "지원 현황",      // 3
             "회원 정보 입력",  // 4
             "회원 정보 수정",  // 5
-            "회원 탈퇴"   // 6
+            "회원 정보 조회",  // 6
+            "회원 탈퇴"   // 7
         };
     }
 
@@ -34,9 +36,10 @@ public class PersonalUI extends BaseBoardUI {
             case "1": return new SeachAllUI();
             case "2": return new SearchOneUI();
             case "3": return new PersonalApplyJob(); // 지원 현황 보기
-            case "4": return new AddUI();            // 회원 정보 입력
+            case "4": return new ProfileInputUI();            // 회원 정보 입력
             case "5": return new UpdateUI();         // 회원 정보 수정
-            case "6": return new DeleteUI();         // 회원 정보 삭제
+            case "6": return new ViewInfoUI();        // 회원 정보 보기
+            case "7": return new DeleteUI();         // 회원 정보 삭제
             default:
                 throw new ChoiceOutOfBoundException("⚠️ 메뉴에서 선택할 수 없는 숫자입니다.");
         }

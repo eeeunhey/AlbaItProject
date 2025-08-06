@@ -1,8 +1,8 @@
 package adminBoardUI;
 
+import companyBoardUI.DeleteUI;
 import exception.ChoiceOutOfBoundException;
 import ui.BaseBoardUI;
-import ui.DeleteUI;
 import ui.IBoardUI;
 
 public class AdminUI extends BaseBoardUI {
