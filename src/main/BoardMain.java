@@ -2,7 +2,6 @@ package main;
 
 
 import accountUI.AccountUI;
-import ui.BoardUI;
 
 public class BoardMain {
 

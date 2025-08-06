@@ -1,105 +1,44 @@
 package personalBoardUI;
 
-import companyBoardUI.PostAddUI;
+
 import exception.ChoiceOutOfBoundException;
 import ui.AddUI;
-import ui.BaseUI;
 import ui.DeleteUI;
-import ui.ExitUI;
 import ui.IBoardUI;
 import ui.SeachAllUI;
 import ui.SearchOneUI;
 import ui.UpdateUI;
+import ui.BaseBoardUI;
 
-public class PersonalUI extends BaseUI {
 
-	private String menu() {
-		for (int i = 0; i < 20; i++) {
-			System.out.println();
-		}
-		System.out.println("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓");
-		System.out.println("                개인 회원 페이지 선택하기            ");
-		System.out.println("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\n");
-		System.out.println("\t1. 전체게시글 조회");
-		System.out.println("\t2. 게시글 조회");
-		System.out.println("\t3. 지원 현황");
-		System.out.println("\t4. 회원 정보 입력");
-		System.out.println("\t5. 회원 정보 수정");
-		System.out.println("\t6. 회원 정보 삭제");
-		System.out.println("\t0. 종료");
-		System.out.println("-----------------------------------");
-		String type = scanStr("\t항목을 선택하세요 : ");
+public class PersonalUI extends BaseBoardUI {
 
-		return type;
+    @Override
+    protected String getMenuTitle() {
+        return "개인 회원 메뉴 선택";
+    }
 
-	}
+    @Override
+    protected String[] getSpecificMenuItems() {
+        return new String[] {
+            "지원 현황",      // 3
+            "회원 정보 입력",  // 4
+            "회원 정보 수정",  // 5
+            "회원 탈퇴"   // 6
+        };
+    }
 
-	@Override
-	public void execute() throws Exception {
-		while (true) {
-
-			try {
-				String choice = menu();
-				IBoardUI ui = null;
-
-				switch (choice) {
-
-				case "1":
-					ui = new SeachAllUI();
-
-					break;
-				case "2":
-					ui = new SearchOneUI();
-
-					break;
-				case "3":
-					ui = new PersonalApplyJob();
-					break;
-				case "4":
-					ui = new AddUI();
-
-					break;
-				case "5":
-					ui = new UpdateUI();
-
-					break;
-				case "6":
-					ui = new DeleteUI();
-					// System.out.println("게시글 삭제 선택");
-					break;
-				case "0":
-					ui = new ExitUI();
-					// ExitUI exit = new ExitUI();
-					// ExitUI 클래스 호출해 객체를 생성한다 (종료하기 기능)
-					// exit.execute();
-					// ExitUI에서 재정의한 execute를 호출한다
-
-					/**
-					 * 여기 해당하는 값에 명령어를 처리해야 하는데 너무 길다 메뉴가 늘면 늘수록 보드 UI가 어마무시하게 늘어나겠다 그럼 클래스로 분리해야
-					 * 되겠네 그럼 종료 클래스 만들자
-					 */
-
-					/**
-					 * 종료 행동만들기 System.out.println("-----------------------------");
-					 * System.out.println("\t프로그램을 종료합니다.");
-					 * System.out.println("-----------------------------"); System.exit(0); // 해당하는
-					 * 종료값이 들어오면 종료되는 메서드이다
-					 */
-					break;
-				}
-				if (ui != null) {
-					// 번호 선택 시 ui에 객체값이 들어오기 때문에 null 상태가 아니다
-					ui.execute();
-					// 선택 시 각각 오버라이드한 객체의 execute 값을 가져온다
-				} else {
-
-					throw new ChoiceOutOfBoundException("메뉴에서 선택할 수 없는 숫자입니다.");
-					// System.out.println("\t 잘못선택하셨습니다.");
-					// 없는 번호를 선택할 경우 null 값이 들어오고 잘못 선택했습니다 출력
-				}
-			} catch (ChoiceOutOfBoundException e) {
-				System.out.println(e.getMessage());
-			}
-		}
-	}
+    @Override
+    protected IBoardUI getSpecificUI(String choice) throws ChoiceOutOfBoundException {
+        switch (choice) {
+            case "1": return new SeachAllUI();
+            case "2": return new SearchOneUI();
+            case "3": return new PersonalApplyJob(); // 지원 현황 보기
+            case "4": return new AddUI();            // 회원 정보 입력
+            case "5": return new UpdateUI();         // 회원 정보 수정
+            case "6": return new DeleteUI();         // 회원 정보 삭제
+            default:
+                throw new ChoiceOutOfBoundException("⚠️ 메뉴에서 선택할 수 없는 숫자입니다.");
+        }
+    }
 }
