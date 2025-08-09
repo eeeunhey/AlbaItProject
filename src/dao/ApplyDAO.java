@@ -62,4 +62,61 @@ public class ApplyDAO {
 
         return list;
     }
+
+    public List<ApplyVO> findApplicantsByCompany(String companyId) {
+        String sql =
+            "SELECT a.apply_id, a.user_no, a.post_id, a.status, a.apply_date, " +
+            "       p.title AS post_title " +
+            "  FROM apply a " +
+            "  JOIN job_post p ON a.post_id = p.post_id " +
+            " WHERE p.user_id = ? " +                   // 기업이 작성한 공고 기준
+            " ORDER BY a.apply_date DESC";
+
+        List<ApplyVO> list = new ArrayList<>();
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, companyId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    ApplyVO vo = new ApplyVO();
+                    vo.setApplyId(rs.getInt("apply_id"));
+                    vo.setUserNo(rs.getInt("user_no"));        // int 타입 주의
+                    vo.setPostID(rs.getInt("post_id"));
+                    vo.setStatus(rs.getString("status"));
+                    // apply_date가 Timestamp일 가능성 → java.util.Date로 매핑
+                    Timestamp ts = rs.getTimestamp("apply_date");
+                    vo.setApplyDate(ts != null ? new java.util.Date(ts.getTime()) : null);
+
+                    vo.setPostTitle(rs.getString("post_title")); // 공고 제목
+
+                    list.add(vo);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace(); // 로깅으로 바꾸는 걸 권장
+        }
+        return list;
+    }
+    
+    // 지원 여부 확인
+    public boolean hasAlreadyApplied(int postId, String userId) {
+        String sql = "SELECT COUNT(*) FROM APPLY WHERE post_id = ? AND user_no = ?";
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, postId);
+            pstmt.setString(2, userId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0; // 이미 지원한 경우 true
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
 }
+

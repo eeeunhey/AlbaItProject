@@ -20,8 +20,10 @@ public abstract class BaseUI implements IBoardUI {
 
 	private Scanner sc;
 	protected BoardService boardService;
-    public static String loginUserId = null;      // 현재 로그인한 ID
-    public static String loginUserType = null;    // "개인", "기업", "관리자"
+    public static String loginUserId;      // 현재 로그인한 ID
+    public static String loginUserType;    // "개인", "기업", "관리자"
+
+    
 
 	public BaseUI() {
 		sc = new Scanner(System.in);

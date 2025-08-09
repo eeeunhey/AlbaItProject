@@ -239,4 +239,38 @@ public class UserDAO {
 
 		return list;
 	}
+	
+
+    /**
+     * user_no(PK) 기준으로 회원 상세 정보 조회
+     * @param userNo 회원 고유번호 (정수형 PK)
+     * @return UserVO 객체 (없으면 null)
+     */
+    public UserVO getUserDetailByNo(int userNo) {
+        String sql = "SELECT user_no, user_id, name, nickname, resume_job_title, resume_has_project, resume_education " +
+                     "FROM user_table WHERE user_no = ?";
+
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, userNo);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    UserVO vo = new UserVO();
+                    vo.setUserNo(rs.getInt("user_no"));
+                    vo.setUserId(rs.getString("user_id"));
+                    vo.setName(rs.getString("name"));
+                    vo.setNickname(rs.getString("nickname"));
+                    vo.setResumeJobTitle(rs.getString("resume_job_title"));
+                    vo.setResumeHasProject(rs.getString("resume_has_project"));
+                    vo.setResumeEducation(rs.getString("resume_education"));
+                    return vo;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null; // 조회 실패 시
+    }
 }

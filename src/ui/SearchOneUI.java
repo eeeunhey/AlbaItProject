@@ -2,9 +2,9 @@ package ui;
 
 import boardVO.PostVO;
 import dao.PostDAO;
+import dao.ApplyDAO;   // ✅ 추가
 
 public class SearchOneUI extends BaseUI {
-	// 하나 선택해서 조회하는 UI
 	@Override
 	public void execute() throws Exception {
 
@@ -28,12 +28,19 @@ public class SearchOneUI extends BaseUI {
 		System.out.println("\t등록일 : " + postNo.getCreatedAt());
 		System.out.println("-------------------------------");
 
-		// ---------------------- 여기서부터 지원 기능 추가 ----------------------
-		// 현재 로그인한 사용자 id (로그인 상태라면 세션/전역 변수로 관리)
-		String loginUserId = BaseUI.loginUserId; // 이런 식으로 저장해두었다고 가정
+		// ---------------------- 지원 기능 ----------------------
+		String loginUserId = BaseUI.loginUserId; // 로그인한 사용자
 
-		// 개인회원만 지원 가능
-		if (BaseUI.loginUserType.equals("개인")) {
+		if ("U".equals(BaseUI.loginUserType)) {  // ✅ NPE 예방을 위해 리터럴 먼저
+			ApplyDAO applyDao = new ApplyDAO();     // ✅ 추가
+
+
+			// ✅ 먼저 중복 지원 여부 확인
+			if (applyDao.hasAlreadyApplied(no, loginUserId)) {
+				System.out.println("⚠️ 이미 지원한 공고입니다.");
+				return;
+			}
+
 			String choice = scanStr("이 공고에 지원하시겠습니까? (Y/N) : ");
 			if (choice.equalsIgnoreCase("Y")) {
 				PostDAO postDao = new PostDAO();
@@ -46,7 +53,8 @@ public class SearchOneUI extends BaseUI {
 			}
 		} else {
 			System.out.println("기업 및 관리자 계정은 지원할 수 없습니다.");
+			System.out.println("현재 회원 유형: " + BaseUI.loginUserType);
+
 		}
 	}
-
 }

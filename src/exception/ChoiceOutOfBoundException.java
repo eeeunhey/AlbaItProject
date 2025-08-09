@@ -14,4 +14,7 @@ public class ChoiceOutOfBoundException extends Exception {
 		//throw new ChoiceOutOfBoundException("에러메세지 출력");
 		//예외가 발생했을 때, 이 메시지가 에러 로그에 출력
 	}
+	
+	
+	
 }
