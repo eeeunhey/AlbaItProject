@@ -2,6 +2,7 @@ package ui;
 
 import boardVO.UserVO;
 import dao.UserDAO;
+import java.text.SimpleDateFormat;
 
 public class ViewInfoUI extends BaseUI {
 
@@ -9,33 +10,50 @@ public class ViewInfoUI extends BaseUI {
 	public void execute() throws Exception {
 		System.out.println("\n📄 [회원 정보 조회]");
 
-		String userId = BaseUI.loginUserId;
+		// 로그인 여부 체크
+		if (BaseUI.loginUserId == null) {
+			System.out.println("⚠️ 로그인 상태가 아닙니다.");
+			return;
+		}
+
 		UserDAO dao = new UserDAO();
-		UserVO user = dao.getUserDetail(userId);
+		UserVO user = dao.getUserDetail(BaseUI.loginUserId);
 
 		if (user == null) {
 			System.out.println("❌ 회원 정보를 불러오지 못했습니다.");
 			return;
 		}
 
-		System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-		System.out.printf("아이디: %s\n", user.getUserId());
-		System.out.printf("이름: %s\n", user.getName());
-		System.out.printf("닉네임: %s\n", user.getNickname());
-		System.out.printf("회원유형: %s\n", user.getUserType());
+		// 날짜 포맷
+		SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
-		if ("C".equals(user.getUserType())) {
-			System.out.printf("회사명: %s\n", user.getCompanyName());
-			System.out.printf("담당자: %s\n", user.getManagerName());
-			System.out.printf("사업자등록번호: %s\n", user.getBusinessNumber());
-		} else if ("U".equals(user.getUserType())) {
-			System.out.printf("희망 직무: %s\n", user.getResumeJobTitle());
-			System.out.printf("희망 근무 지역: %s\n", user.getResumeLocation());
-			System.out.printf("프로젝트 경험: %s\n", user.getResumeHasProject());
-			System.out.printf("프로젝트 내용: %s\n", user.getResumeProject());
-			System.out.printf("이수한 교육: %s\n", user.getResumeEducation());
+		// 정보 출력
+		System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+		System.out.printf("%-8s: %d\n", "회원번호", user.getUserNo());
+		System.out.printf("%-8s: %s\n", "아이디", nullSafe(user.getUserId()));
+		System.out.printf("%-8s: %s\n", "이름", nullSafe(user.getName()));
+		System.out.printf("%-8s: %s\n", "닉네임", nullSafe(user.getNickname()));
+		System.out.printf("%-8s: %s\n", "회원유형", convertUserTypeName(user.getUserType()));
+		System.out.printf("%-8s: %s\n", "가입일", user.getRegDate() != null ? df.format(user.getRegDate()) : "-");
+		System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+	}
+
+	// null일 경우 대체 문자 반환
+	private String nullSafe(String value) {
+		return value != null ? value : "-";
+	}
+
+	// 코드 → 한글 변환
+	private String convertUserTypeName(String code) {
+		switch (code) {
+		case "U":
+			return "개인회원";
+		case "C":
+			return "기업회원";
+		case "A":
+			return "관리자";
+		default:
+			return "알수없음";
 		}
-
-		System.out.println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 	}
 }

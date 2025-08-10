@@ -9,114 +9,163 @@ import db.DBUtil;
 
 public class ApplyDAO {
 
-    // 지원 등록
-    public boolean insertApply(ApplyVO apply) {
-        String sql = "INSERT INTO APPLY (APPLY_ID, USER_NO, POST_ID, STATUS, APPLY_DATE) " +
-                     "VALUES (APPLY_SEQ.NEXTVAL, ?, ?, ?, SYSDATE)";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	// --------------------------------------
+	// [상태값 관리] 허용되는 상태 목록
+	// --------------------------------------
+	private static final String[] ALLOWED_STATUS = { "접수", "검토 중", "합격", "불합격" };
 
-            pstmt.setInt(1, apply.getUserNo());
-            pstmt.setInt(2, apply.getPostID());
-            pstmt.setString(3, apply.getStatus());
+	private boolean isValidStatus(String status) {
+		for (String s : ALLOWED_STATUS) {
+			if (s.equals(status))
+				return true;
+		}
+		return false;
+	}
 
-            return pstmt.executeUpdate() > 0;
+	// ============================================================
+	// 1. 지원 등록 관련 메서드 (UI: 공고 상세보기 -> 지원)
+	// ============================================================
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+	/** 지원 내역 등록 (STATUS 기본값: '접수') */
+	public boolean insertApply(int userNo, int postId) {
+		String sql = "INSERT INTO apply (apply_id, user_no, post_id, apply_date) "
+				+ "VALUES (apply_seq.NEXTVAL, ?, ?, SYSDATE)";
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-        return false;
-    }
+			pstmt.setInt(1, userNo);
+			pstmt.setInt(2, postId);
+			return pstmt.executeUpdate() > 0;
 
-    // 사용자 ID 기준으로 나의 지원 내역 조회
-    public List<ApplyVO> getMyApplies(String loginUserId) {
-        List<ApplyVO> list = new ArrayList<>();
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
 
-        String sql = "SELECT a.APPLY_ID, a.USER_NO, a.POST_ID, a.STATUS, a.APPLY_DATE, p.TITLE " +
-                     "FROM APPLY a " +
-                     "JOIN JOB_POST p ON a.POST_ID = p.POST_ID " +
-                     "WHERE a.USER_NO = (SELECT USER_NO FROM USER_TABLE WHERE USER_ID = ?) " +
-                     "ORDER BY a.APPLY_DATE DESC";
+	/** 지원 내역 등록 (STATUS 직접 지정) */
+	public boolean insertApply(int userNo, int postId, String status) {
+		if (!isValidStatus(status))
+			status = "접수"; // 안전 처리
 
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+		String sql = "INSERT INTO apply (apply_id, user_no, post_id, status, apply_date) "
+				+ "VALUES (apply_seq.NEXTVAL, ?, ?, ?, SYSDATE)";
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, loginUserId);
-            ResultSet rs = pstmt.executeQuery();
+			pstmt.setInt(1, userNo);
+			pstmt.setInt(2, postId);
+			pstmt.setString(3, status);
+			return pstmt.executeUpdate() > 0;
 
-            while (rs.next()) {
-                ApplyVO vo = new ApplyVO();
-                vo.setApplyId(rs.getInt("APPLY_ID"));
-                vo.setUserNo(rs.getInt("USER_NO"));
-                vo.setPostID(rs.getInt("POST_ID"));
-                vo.setStatus(rs.getString("STATUS"));
-                vo.setApplyDate(rs.getDate("APPLY_DATE"));
-                vo.setPostTitle(rs.getString("TITLE")); // 제목까지 포함
-                list.add(vo);
-            }
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+	/** 특정 공고에 이미 지원했는지 확인 */
+	public boolean exists(int userNo, int postId) {
+		String sql = "SELECT COUNT(*) FROM apply WHERE user_no = ? AND post_id = ?";
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-        return list;
-    }
+			pstmt.setInt(1, userNo);
+			pstmt.setInt(2, postId);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				return rs.next() && rs.getInt(1) > 0;
+			}
 
-    public List<ApplyVO> findApplicantsByCompany(String companyId) {
-        String sql =
-            "SELECT a.apply_id, a.user_no, a.post_id, a.status, a.apply_date, " +
-            "       p.title AS post_title " +
-            "  FROM apply a " +
-            "  JOIN job_post p ON a.post_id = p.post_id " +
-            " WHERE p.user_id = ? " +                   // 기업이 작성한 공고 기준
-            " ORDER BY a.apply_date DESC";
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
 
-        List<ApplyVO> list = new ArrayList<>();
+	// ============================================================
+	// 2. 개인 회원 기능 (UI: PersonalApplyJob)
+	// ============================================================
 
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+	/** 개인 회원 - 나의 지원 내역 조회 */
+	public List<ApplyVO> getMyApplies(int loginUserNo) {
+		List<ApplyVO> list = new ArrayList<>();
+		String sql = "SELECT a.apply_id, a.user_no, a.post_id, a.status, a.apply_date, " + "p.title AS post_title "
+				+ "FROM apply a " + "JOIN job_post p ON a.post_id = p.post_id " + "WHERE a.user_no = ? "
+				+ "ORDER BY a.apply_date DESC";
 
-            pstmt.setString(1, companyId);
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    ApplyVO vo = new ApplyVO();
-                    vo.setApplyId(rs.getInt("apply_id"));
-                    vo.setUserNo(rs.getInt("user_no"));        // int 타입 주의
-                    vo.setPostID(rs.getInt("post_id"));
-                    vo.setStatus(rs.getString("status"));
-                    // apply_date가 Timestamp일 가능성 → java.util.Date로 매핑
-                    Timestamp ts = rs.getTimestamp("apply_date");
-                    vo.setApplyDate(ts != null ? new java.util.Date(ts.getTime()) : null);
+			pstmt.setInt(1, loginUserNo);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					ApplyVO vo = new ApplyVO();
+					vo.setApplyId(rs.getInt("apply_id"));
+					vo.setUserNo(rs.getInt("user_no"));
+					vo.setPostID(rs.getInt("post_id"));
+					vo.setStatus(rs.getString("status"));
+					vo.setApplyDate(rs.getTimestamp("apply_date"));
+					vo.setPostTitle(rs.getString("post_title"));
+					list.add(vo);
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return list;
+	}
 
-                    vo.setPostTitle(rs.getString("post_title")); // 공고 제목
+	// ============================================================
+	// 3. 기업 회원 기능 (UI: ViewApplicantsUI)
+	// ============================================================
 
-                    list.add(vo);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace(); // 로깅으로 바꾸는 걸 권장
-        }
-        return list;
-    }
-    
-    // 지원 여부 확인
-    public boolean hasAlreadyApplied(int postId, String userId) {
-        String sql = "SELECT COUNT(*) FROM APPLY WHERE post_id = ? AND user_no = ?";
-        try (Connection conn = DBUtil.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, postId);
-            pstmt.setString(2, userId);
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) > 0; // 이미 지원한 경우 true
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-    
+	/** 기업 회원 - 내가 올린 공고에 지원한 사람 목록 조회 */
+	public List<ApplyVO> findApplicantsByCompany(String companyId) {
+		List<ApplyVO> list = new ArrayList<>();
+		String sql = "SELECT a.apply_id, a.user_no, a.post_id, a.status, a.apply_date, " + "p.title AS post_title "
+				+ "FROM apply a " + "JOIN job_post p ON a.post_id = p.post_id " + "WHERE p.user_id = ? "
+				+ "ORDER BY a.apply_date DESC";
+
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+			pstmt.setString(1, companyId);
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next()) {
+					ApplyVO vo = new ApplyVO();
+					vo.setApplyId(rs.getInt("apply_id"));
+					vo.setUserNo(rs.getInt("user_no"));
+					vo.setPostID(rs.getInt("post_id"));
+					vo.setStatus(rs.getString("status"));
+					vo.setApplyDate(rs.getTimestamp("apply_date"));
+					vo.setPostTitle(rs.getString("post_title"));
+					list.add(vo);
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return list;
+	}
+
+	// ============================================================
+	// 4. 관리자/기업 - 지원 상태 변경
+	// ============================================================
+
+	/** 지원 상태 변경 (접수/검토 중/합격/불합격) */
+	public boolean updateStatus(int applyId, String newStatus) {
+		if (!isValidStatus(newStatus)) {
+			System.out.println("⚠️ 허용되지 않은 상태값입니다: " + newStatus);
+			return false;
+		}
+
+		String sql = "UPDATE apply SET status = ? WHERE apply_id = ?";
+		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+			pstmt.setString(1, newStatus);
+			pstmt.setInt(2, applyId);
+			return pstmt.executeUpdate() > 0;
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+
 }
-

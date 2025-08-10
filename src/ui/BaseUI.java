@@ -20,10 +20,9 @@ public abstract class BaseUI implements IBoardUI {
 
 	private Scanner sc;
 	protected BoardService boardService;
-    public static String loginUserId;      // 현재 로그인한 ID
-    public static String loginUserType;    // "개인", "기업", "관리자"
-
-    
+	public static String loginUserId = null; // 로그인한 사용자의 아이디
+	public static int loginUserNo = -1; // 로그인한 사용자의 회원번호
+	public static String loginUserType = null; // 로그인한 사용자의 유형 (U, C, A)
 
 	public BaseUI() {
 		sc = new Scanner(System.in);
@@ -83,6 +82,5 @@ public abstract class BaseUI implements IBoardUI {
 	private boolean isKorean(char c) {
 		return (c >= 0xAC00 && c <= 0xD7A3);
 	}
-	
-	
+
 }

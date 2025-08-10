@@ -1,164 +1,159 @@
+// dao/PostDAO.java
 package dao;
 
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import boardVO.BoardVO;
 import boardVO.PostVO;
 import db.DBUtil;
 
-public class PostDAO {
+public class PostDAO extends DaoSupport {
 
-	private List<PostVO> postList;
+    private List<PostVO> postList;
 
-	public PostDAO() {
-		postList = new ArrayList<>();
-	}
+    public PostDAO() {
+        postList = new ArrayList<>();
+    }
 
-	PostVO post = null;
+    private PostVO post = null;
 
-	public boolean insertJobPostList(List<PostVO> postList) {
-		String sql = "INSERT INTO job_post " + "(post_id, user_id, title, content, location, pay, work_time, deadline) "
-				+ "VALUES (job_post_seq.NEXTVAL, ?, ?, ?, ?, ?, ?, ?)";
+    public boolean insertJobPostList(List<PostVO> postList) {
+        final String sql =
+            "INSERT INTO job_post (post_id, user_id, title, content, location, pay, work_time, deadline) " +
+            "VALUES (job_post_seq.NEXTVAL, ?, ?, ?, ?, ?, ?, ?)";
 
-		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-			for (PostVO p : postList) {
-				post = p;
-				pstmt.setString(1, post.getUserId());
-				pstmt.setString(2, post.getTitle());
-				pstmt.setString(3, post.getContent());
-				pstmt.setString(4, post.getLocation());
-				pstmt.setString(5, post.getPay());
-				pstmt.setString(6, post.getWorkTime());
+            for (PostVO p : postList) {
+                post = p;
+                pstmt.setString(1, p.getUserId());
+                pstmt.setString(2, p.getTitle());
+                pstmt.setString(3, p.getContent());
+                pstmt.setString(4, p.getLocation());
+                pstmt.setString(5, p.getPay());
+                pstmt.setString(6, p.getWorkTime());
 
-				if (post.getDeadline() != null && !post.getDeadline().isEmpty()) {
-					pstmt.setDate(7, java.sql.Date.valueOf(post.getDeadline()));
-				} else {
-					pstmt.setNull(7, java.sql.Types.DATE);
-				}
+                if (p.getDeadline() != null && !p.getDeadline().isEmpty()) {
+                    pstmt.setDate(7, java.sql.Date.valueOf(p.getDeadline())); // yyyy-MM-dd
+                } else {
+                    pstmt.setNull(7, Types.DATE);
+                }
 
-				pstmt.addBatch();
-			}
+                pstmt.addBatch();
+            }
 
-			int[] results = pstmt.executeBatch();
-			for (int result : results) {
-				if (result == PreparedStatement.EXECUTE_FAILED) {
-					return false;
-				}
-			}
-			return true;
+            int[] results = pstmt.executeBatch();
+            for (int r : results) {
+                if (r == PreparedStatement.EXECUTE_FAILED) {
+                    return false;
+                }
+            }
+            return true;
 
-		} catch (SQLException e) {
-			System.err.println("SQL Error with post: " + (post != null ? post.toString() : "unknown"));
-			e.printStackTrace();
-		}
-		return false;
-	}
+        } catch (SQLException e) {
+            // 어떤 post에서 실패했는지 문맥 포함
+            String hint = (post != null) ? (" [title=" + post.getTitle() + ", userId=" + post.getUserId() + "]") : "";
+            throw wrap(e, "insertJobPostList Insert 실패" + hint);
+        }
+    }
 
-	// 전체 공고 조회
-	public List<PostVO> selectAllPosts() {
-		List<PostVO> list = new ArrayList<>();
-		String sql = "SELECT * FROM job_post ORDER BY post_id DESC";
+    // 전체 공고 조회
+    public List<PostVO> selectAllPosts() {
+        final String sql = "SELECT * FROM job_post ORDER BY post_id DESC";
+        List<PostVO> list = new ArrayList<>();
 
-		try (Connection conn = DBUtil.getConnection();
-				PreparedStatement pstmt = conn.prepareStatement(sql);
-				ResultSet rs = pstmt.executeQuery()) {
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
 
-			while (rs.next()) {
-				PostVO post = new PostVO();
-				post.setPostId(rs.getInt("post_id"));
-				post.setUserId(rs.getString("user_id"));
-				post.setTitle(rs.getString("title"));
-				post.setContent(rs.getString("content"));
-				post.setLocation(rs.getString("location"));
-				post.setPay(rs.getString("pay"));
-				post.setWorkTime(rs.getString("work_time"));
-				post.setDeadline(rs.getString("deadline"));
-				post.setCreatedAt(rs.getString("reg_date"));
+            while (rs.next()) {
+                PostVO post = new PostVO();
+                post.setPostId(rs.getInt("post_id"));
+                post.setUserId(rs.getString("user_id"));
+                post.setTitle(rs.getString("title"));
+                post.setContent(rs.getString("content"));
+                post.setLocation(rs.getString("location"));
+                post.setPay(rs.getString("pay"));
+                post.setWorkTime(rs.getString("work_time"));
+                post.setDeadline(rs.getString("deadline"));
+                post.setCreatedAt(rs.getString("reg_date"));
+                list.add(post);
+            }
+            return list;
 
-				list.add(post);
-			}
+        } catch (SQLException e) {
+            throw wrap(e, "selectAllPosts 실패");
+        }
+    }
 
-		} catch (SQLException e) {
-			System.out.println("❌ 게시글 조회 중 오류 발생");
-			e.printStackTrace();
-		}
+    public PostVO selectByNo(int boardNo) {
+        final String sql = "SELECT * FROM job_post WHERE post_id = ?";
+        PostVO post = null;
 
-		return list;
-	}
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-	public PostVO selectByNo(int boardNo) {
-		String sql = "SELECT * FROM job_post WHERE post_id = ?";
-		PostVO post = null;
+            pstmt.setInt(1, boardNo);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    post = new PostVO();
+                    post.setPostId(rs.getInt("post_id"));
+                    post.setUserId(rs.getString("user_id"));
+                    post.setTitle(rs.getString("title"));
+                    post.setContent(rs.getString("content"));
+                    post.setLocation(rs.getString("location"));
+                    post.setPay(rs.getString("pay"));
+                    post.setWorkTime(rs.getString("work_time"));
+                    post.setDeadline(rs.getString("deadline"));
+                    post.setCreatedAt(rs.getString("reg_date"));
+                }
+            }
+            return post;
 
-		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        } catch (SQLException e) {
+            throw wrap(e, "selectByNo 실패: post_id=" + boardNo);
+        }
+    }
 
-			pstmt.setInt(1, boardNo);
-			try (ResultSet rs = pstmt.executeQuery()) {
-				if (rs.next()) {
-					post = new PostVO();
-					post.setPostId(rs.getInt("post_id"));
-					post.setUserId(rs.getString("user_id")); // 작성자 ID
-					post.setTitle(rs.getString("title"));
-					post.setContent(rs.getString("content"));
-					post.setLocation(rs.getString("location"));
-					post.setPay(rs.getString("pay"));
-					post.setWorkTime(rs.getString("work_time"));
-					post.setDeadline(rs.getString("deadline"));
-					post.setCreatedAt(rs.getString("reg_date"));
+    public boolean deleteByNo(int boardNo) {
+        final String sql = "DELETE FROM job_post WHERE post_id = ?";
 
-				}
-			}
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		return post;
-	}
+            pstmt.setInt(1, boardNo);
+            int result = pstmt.executeUpdate();
+            return result > 0;
 
-	public boolean deleteByNo(int boardNo) {
-		String sql = "DELETE FROM job_post WHERE post_id = ?";
-		try (Connection conn = DBUtil.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        } catch (SQLException e) {
+            throw wrap(e, "deleteByNo 실패: post_id=" + boardNo);
+        }
+    }
 
-			pstmt.setInt(1, boardNo);
-			int result = pstmt.executeUpdate();
-			return result > 0; // 1건 이상 삭제되면 true
+    public boolean applyToJob(int postId, String loginUserId) {
+        final String findUserNoSql = "SELECT user_no FROM user_table WHERE user_id = ?";
+        final String insertSql =
+            "INSERT INTO apply (apply_id, post_id, user_no, status) VALUES (apply_seq.NEXTVAL, ?, ?, '접수')";
 
-		} catch (SQLException e) {
-			e.printStackTrace();
-			return false;
-		}
-	}
+        try (Connection conn = DBUtil.getConnection();
+             PreparedStatement pstmt1 = conn.prepareStatement(findUserNoSql)) {
 
-	public boolean applyToJob(int postId, String loginUserId) {
-		String findUserNoSql = "SELECT user_no FROM user_table WHERE user_id = ?";
-		String insertSql = "INSERT INTO apply (apply_id, post_id, user_no, status) "
-				+ "VALUES (apply_seq.NEXTVAL, ?, ?, '접수')";
+            pstmt1.setString(1, loginUserId);
+            try (ResultSet rs = pstmt1.executeQuery()) {
+                if (!rs.next()) return false;
 
-		try (Connection conn = DBUtil.getConnection();
-				PreparedStatement pstmt1 = conn.prepareStatement(findUserNoSql)) {
+                int userNo = rs.getInt("user_no");
+                try (PreparedStatement pstmt2 = conn.prepareStatement(insertSql)) {
+                    pstmt2.setInt(1, postId);
+                    pstmt2.setInt(2, userNo);
+                    return pstmt2.executeUpdate() > 0;
+                }
+            }
 
-			pstmt1.setString(1, loginUserId);
-			ResultSet rs = pstmt1.executeQuery();
-
-			if (rs.next()) {
-				int userNo = rs.getInt("user_no");
-
-				try (PreparedStatement pstmt2 = conn.prepareStatement(insertSql)) {
-					pstmt2.setInt(1, postId);
-					pstmt2.setInt(2, userNo);
-
-					return pstmt2.executeUpdate() > 0;
-				}
-			}
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-		return false;
-	}
-
+        } catch (SQLException e) {
+            throw wrap(e, "applyToJob 실패: post_id=" + postId + ", userId=" + loginUserId);
+        }
+    }
 }
